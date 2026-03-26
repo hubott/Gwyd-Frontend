@@ -3,7 +3,7 @@ import { useState, useMemo, useCallback, memo } from "react";
 import { Navbar } from "~/app/_components/navbar";
 
 interface Player {
-  [key: string]: string | number | boolean;
+  [key: string]: string | number | boolean | undefined;
   class?: string;
   Current?: number;
 }
