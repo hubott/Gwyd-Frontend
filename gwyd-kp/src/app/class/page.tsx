@@ -1,31 +1,115 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import { Navbar } from "~/app/_components/navbar";
+
+interface Player {
+  [key: string]: string | number | boolean;
+  class?: string;
+  Current?: number;
+}
+
+interface ClassData {
+  class: string;
+  players: Player[];
+}
+
+type ApiResponse = ClassData[] | { error: string };
+
+const ResultsTable = memo(function ResultsTable({ data }: { data: ClassData[] }) {
+  const { allPlayers, allKeys } = useMemo(() => {
+    // Flatten all players from all classes and add class info
+    const players = data.flatMap((clsData: ClassData) =>
+      clsData.players.map((player: Player) => ({
+        ...player,
+        class: clsData.class
+      }))
+    );
+
+    // Sort by Current (assuming Current is a number, sort descending)
+    players.sort((a: Player, b: Player) => (b.Current ?? 0) - (a.Current ?? 0));
+
+    // Get all unique keys for table headers (optimized)
+    const keys = Array.from(
+      new Set(players.flatMap((player: Player) => Object.keys(player)))
+    );
+
+    return { allPlayers: players, allKeys: keys };
+  }, [data]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-gray-800">Results</h2>
+        <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+          {allPlayers.length} players found
+        </span>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200" style={{ height: '600px', display: 'flex', flexDirection: 'column' }}>
+        <div className="overflow-x-auto flex-1 flex flex-col">
+          <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed' }}>
+            <thead className="bg-gray-50 sticky top-0 z-10">
+              <tr>
+                {allKeys.map(key => (
+                  <th key={key} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: `${100 / allKeys.length}%` }}>
+                    {key}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200 overflow-y-auto">
+              {allPlayers.map((player: Player, index: number) => (
+                <tr key={index} className="hover:bg-gray-50 transition-colors">
+                  {allKeys.map(key => (
+                    <td key={key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900" style={{ width: `${100 / allKeys.length}%` }}>
+                      {key === "Last Raid" && player[key]
+                        ? new Date(String(player[key])).toLocaleDateString("en-GB") // converts to dd/mm/yyyy
+                        : (player[key] ?? '-')}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    </div>
+  );
+});
 
 export default function ClassPage() {
   const [classes, setClasses] = useState<string[]>(["Mage"]);
   const [minVal, setMinVal] = useState(1000);
   const [days, setDays] = useState(30);
   const [KP, setKP] = useState("GKP");
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<ApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const allClasses = ["Mage", "Warrior", "Rogue", "Druid", "Ranger"]; // all possible classes
 
-  const fetchData = async (e: React.FormEvent) => {
+  const handleSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const c = e.currentTarget.value;
+    if (e.target.checked) {
+      setClasses(prev => [...prev, c]);
+    } else {
+      setClasses(prev => prev.filter(cls => cls !== c));
+    }
+  }, []);
+
+  const fetchData = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
       const query = classes.map(c => `player_classes=${encodeURIComponent(c)}`).join("&");
       const res = await fetch(`https://gwyd-production.up.railway.app/class?${query}&days=${days}&min_val=${minVal}&KP=${KP}`);
-      const json = await res.json();
+      const json = (await res.json()) as ApiResponse; 
       setData(json);
     } catch (err) {
       setData({ error: (err as Error).message });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [classes, days, minVal, KP]);
 
   return (
     <div>
@@ -58,13 +142,8 @@ export default function ClassPage() {
                         type="checkbox"
                         checked={classes.includes(c)}
                         disabled={isLoading}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setClasses([...classes, c]);
-                          } else {
-                            setClasses(classes.filter(cls => cls !== c));
-                          }
-                        }}
+                        onChange={handleSelect}
+                        value={c}
                         className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 disabled:opacity-50"
                       />
                       <span className={`font-medium ${isLoading ? 'text-gray-400' : 'text-gray-700'}`}>{c}</span>
@@ -166,61 +245,9 @@ export default function ClassPage() {
               </div>
             )}
 
-            {data && !isLoading && (() => {
-              // Flatten all players from all classes and add class info
-              const allPlayers = data.flatMap((clsData: any) =>
-                clsData.players.map((player: any) => ({
-                  ...player,
-                  class: clsData.class
-                }))
-              );
+            {data && !isLoading && !('error' in data) && <ResultsTable data={data} />}
 
-              // Sort by Current (assuming Current is a number, sort descending)
-              allPlayers.sort((a: any, b: any) => (b.Current || 0) - (a.Current || 0));
-
-              // Get all unique keys for table headers
-              const allKeys = Array.from(new Set(allPlayers.flatMap(player => Object.keys(player))));
-
-              return (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-gray-800">Results</h2>
-                    <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                      {allPlayers.length} players found
-                    </span>
-                  </div>
-
-                  <div className="overflow-x-auto bg-white rounded-lg shadow-sm border border-gray-200">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          {allKeys.map(key => (
-                            <th key={key} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              {key}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {allPlayers.map((player: any, index: number) => (
-                          <tr key={index} className="hover:bg-gray-50 transition-colors">
-                            {allKeys.map(key => (
-                              <td key={key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-  {key === "Last Raid" && player[key]
-    ? new Date(player[key]).toLocaleDateString("en-GB") // converts to dd/mm/yyyy
-    : player[key] || '-'}
-</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {data && data.error && (
+            {data && 'error' in data && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <div className="flex">
                   <div className="flex-shrink-0">
@@ -231,7 +258,7 @@ export default function ClassPage() {
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-red-800">Error</h3>
                     <div className="mt-2 text-sm text-red-700">
-                      {data.error}
+                      {(data as { error: string }).error}
                     </div>
                   </div>
                 </div>

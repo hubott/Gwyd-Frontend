@@ -1,6 +1,3 @@
-import Link from "next/link";
-
-import { LatestPost } from "~/app/_components/post";
 import { Navbar } from "~/app/_components/navbar";
 
 export default async function Home() {

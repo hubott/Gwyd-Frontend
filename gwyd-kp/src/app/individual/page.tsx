@@ -1,14 +1,69 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import { Navbar } from "~/app/_components/navbar";
+
+type PlayerData = Record<string, string | number | boolean>;
+
+type ApiResponse = PlayerData | PlayerData[] | { error: string };
+
+const ResultsTable = memo(function ResultsTable({ data }: { data: ApiResponse }) {
+  const allKeys = useMemo(() => {
+    if (data && !('error' in data)) {
+      return Object.keys(data instanceof Array ? data[0] ?? {} : data);
+    }
+    return [];
+  }, [data]);
+
+  const displayData = useMemo(() => {
+    if (data instanceof Array) {
+      return data[0];
+    }
+    return data;
+  }, [data]);
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-2xl font-bold text-gray-800">Player Statistics</h2>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200" style={{ height: 'auto', maxHeight: '400px', overflowY: 'auto', overflowX: 'auto' }}>
+        <table className="min-w-full bg-white border-collapse" style={{ tableLayout: 'fixed' }}>
+          <thead className="sticky top-0 z-10 bg-gray-50">
+            <tr>
+              {allKeys.map((key: string) => (
+                <th
+                  key={key}
+                  className="px-4 py-2 text-left text-sm font-semibold text-gray-700 border-b"
+                  style={{ width: `${100 / allKeys.length}%` }}
+                >
+                  {key}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="hover:bg-gray-50">
+              {allKeys.map((key: string) => {
+                const dataValue = (displayData as PlayerData)[key];
+                return (
+                  <td key={key} className="px-4 py-2 text-sm text-gray-600 border-b" style={{ width: `${100 / allKeys.length}%` }}>
+                    {dataValue ?? 'N/A'}
+                  </td>
+                );
+              })}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+});
 
 export default function IndividualPage() {
   const [characterInput, setCharacterInput] = useState("FrozenRage");
   const [days, setDays] = useState(30);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<ApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const fetchData = async (e: React.FormEvent) => {
+  const fetchData = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setData(null);
@@ -29,17 +84,14 @@ export default function IndividualPage() {
         throw new Error(`API returned ${res.status}: ${text}`);
       }
 
-      const json = await res.json();
+      const json = (await res.json()) as ApiResponse;
       setData(json);
     } catch (err) {
       setData({ error: (err as Error).message });
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Get keys for table headers (only if data is present and no error)
-  const allKeys = data && !data.error ? Object.keys(data) : [];
+  }, [characterInput, days]);
 
   return (
     <div>
@@ -143,7 +195,7 @@ export default function IndividualPage() {
               </div>
             )}
 
-            {data && !isLoading && data.error && (
+            {data && !isLoading && 'error' in data && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <div className="flex">
                   <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -155,42 +207,13 @@ export default function IndividualPage() {
                   </svg>
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-red-800">Error</h3>
-                    <div className="mt-2 text-sm text-red-700">{data.error}</div>
+                    <div className="mt-2 text-sm text-red-700">{(data as { error: string }).error}</div>
                   </div>
                 </div>
               </div>
             )}
 
-            {data && !isLoading && !data.error && (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold text-gray-800">Player Statistics</h2>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full bg-white border border-gray-200 rounded-lg">
-                    <thead>
-                      <tr>
-                        {allKeys.map((key) => (
-                          <th
-                            key={key}
-                            className="px-4 py-2 text-left text-sm font-semibold text-gray-700 border-b"
-                          >
-                            {key}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="hover:bg-gray-50">
-                        {allKeys.map((key) => (
-                          <td key={key} className="px-4 py-2 text-sm text-gray-600 border-b">
-                            {data[key] !== undefined ? data[key] : "N/A"}
-                          </td>
-                        ))}
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+            {data && !isLoading && !('error' in data) && <ResultsTable data={data} />}
           </div>
         </div>
       </div>
