@@ -172,7 +172,7 @@ export default function ClassPage() {
 
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">
-                    Days
+                    Days (attended a boss in the last X days)
                   </label>
                   <input
                     type="number"
