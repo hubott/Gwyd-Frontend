@@ -156,7 +156,7 @@ export default function ClassPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">
-                    Minimum Value
+                    Minimum KP
                   </label>
                   <input
                     type="number"
