@@ -5,6 +5,7 @@ export default async function Home() {
 
   return (
     <div>
+      <title>Home - Gwyd-KP</title>
       <Navbar />
       <div className="container py-8 flex flex-col items-center justify-center">
         <h1 className="text-4xl font-bold mb-4">Welcome to Gwyd-KP</h1>

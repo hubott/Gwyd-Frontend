@@ -96,6 +96,7 @@ export default function IndividualPage() {
 
   return (
     <div>
+        <title>Individual Stats - Gwyd-KP</title>
       <Navbar />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
