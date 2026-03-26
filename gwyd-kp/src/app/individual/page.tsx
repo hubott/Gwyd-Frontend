@@ -58,10 +58,11 @@ const ResultsTable = memo(function ResultsTable({ data }: { data: ApiResponse })
 });
 
 export default function IndividualPage() {
-  const [characterInput, setCharacterInput] = useState("FrozenRage");
+  const [characterInput, setCharacterInput] = useState("");
   const [days, setDays] = useState(30);
   const [data, setData] = useState<ApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [kp, setKp] = useState("RBPP");
 
   const fetchData = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +76,7 @@ export default function IndividualPage() {
       const res = await fetch(
         `https://gwyd-production.up.railway.app/individual?character=${encodeURIComponent(
           characterInput.trim()
-        )}&days=${days}`
+        )}&days=${days}&KP=${kp}`
       );
 
       if (!res.ok) {
@@ -140,9 +141,30 @@ export default function IndividualPage() {
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors ${
                     isLoading ? "border-gray-200 bg-gray-50 cursor-not-allowed" : "border-gray-300"
                   }`}
-                  placeholder="30"
+                  placeholder="Range in days (e.g., 30)"
                 />
               </div>
+
+              <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700">
+                    KP Sheet
+                  </label>
+                  <select
+                    value={kp}
+                    disabled={isLoading}
+                    onChange={e => setKp(e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                      isLoading ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'border-gray-300 bg-white'
+                    }`}
+                  >
+                    <option value="GKP">GKP</option>
+                    <option value="AKP">AKP</option>
+                    <option value="PKP">PKP</option>
+                    <option value="RBPP">RBPP</option>
+                    <option value="DPKP">DPKP</option>
+                    <option value="VKP">VKP</option>
+                  </select>
+                </div>
 
               {/* Submit Button */}
               <div className="flex justify-center">
