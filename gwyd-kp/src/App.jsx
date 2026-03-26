@@ -8,7 +8,7 @@ export default function App() {
   const [data, setData] = useState([]);
 
   const fetchData = async () => {
-    const url = `http://localhost:8000/class?min_val=${minVal}&days=${days}&player_class=${playerClass}&KP=${kp}`;
+    const url = `http://gwyd-production.up.railway.app:8000/class?min_val=${minVal}&days=${days}&player_class=${playerClass}&KP=${kp}`;
     
     try {
       const res = await fetch(url);
