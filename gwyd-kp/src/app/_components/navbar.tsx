@@ -9,6 +9,7 @@ export function Navbar() {
     { href: "/", label: "Home" },
     { href: "/class", label: "Class Stats" },
     { href: "/individual", label: "Individual Stats" },
+    { href: "/class_attendance", label: "Class Attendance"}
   ];
 
   return (
